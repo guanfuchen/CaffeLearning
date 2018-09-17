@@ -49,6 +49,7 @@ inline void MakeTempFilename(string* temp_filename) {
     (temp_files_subpath/caffe::format_int(next_temp_file++, 9)).string();
 }
 
+// 从文本文件中读取到proto，读取失败返回False，成功返回True
 bool ReadProtoFromTextFile(const char* filename, Message* proto);
 
 inline bool ReadProtoFromTextFile(const string& filename, Message* proto) {

@@ -17,11 +17,15 @@ namespace caffe {
   * mechanism is used to allow the snapshot to be saved when stopping
   * execution with a SIGINT (Ctrl-C).
   */
+  // SolverAction命名空间中的枚举类型，比如NONE，STOP和SNAPSHOT
   namespace SolverAction {
     enum Enum {
+      // 没有具体的信号行为
       NONE = 0,  // Take no special action.
+      // 停止训练的行为，snapshot_after_train控制是否snapshot被创建
       STOP = 1,  // Stop training. snapshot_after_train controls whether a
                  // snapshot is created.
+      // 进行快照同时继续训练
       SNAPSHOT = 2  // Take a snapshot, and keep training.
     };
   }

@@ -16,6 +16,7 @@ bool NetNeedsUpgrade(const NetParameter& net_param) {
   return NetNeedsV0ToV1Upgrade(net_param) || NetNeedsV1ToV2Upgrade(net_param);
 }
 
+// 是否有必要更新网络，通过param_file解析来更新SolverParameter
 bool UpgradeNetAsNeeded(const string& param_file, NetParameter* param) {
   bool success = true;
   if (NetNeedsV0ToV1Upgrade(*param)) {
@@ -938,41 +939,54 @@ const char* UpgradeV1LayerType(const V1LayerParameter_LayerType type) {
 }
 
 // Return true iff the solver contains any old solver_type specified as enums
+// 如果求解器包含任何更老的solver type那么返回true
 bool SolverNeedsTypeUpgrade(const SolverParameter& solver_param) {
+  // 如果求解器具有solver类型，那么返回true表示需要upgrade
   if (solver_param.has_solver_type()) {
     return true;
   }
   return false;
 }
 
+// 升级solver类型
 bool UpgradeSolverType(SolverParameter* solver_param) {
+  // 首先solver_param只能有一个solver_type或者type
   CHECK(!solver_param->has_solver_type() || !solver_param->has_type())
       << "Failed to upgrade solver: old solver_type field (enum) and new type "
       << "field (string) cannot be both specified in solver proto text.";
+  // solver_param是否有solver_type，没有则升级失败，否则进行升级
   if (solver_param->has_solver_type()) {
     string type;
     switch (solver_param->solver_type()) {
+    // solver_type是SGD
     case SolverParameter_SolverType_SGD:
       type = "SGD";
       break;
+    // solver_type是Nesterov
     case SolverParameter_SolverType_NESTEROV:
       type = "Nesterov";
       break;
+    // solver_type是AdaGrad
     case SolverParameter_SolverType_ADAGRAD:
       type = "AdaGrad";
       break;
+    // solver_type是RMSProp
     case SolverParameter_SolverType_RMSPROP:
       type = "RMSProp";
       break;
+    // solver_type是AdaDelta
     case SolverParameter_SolverType_ADADELTA:
       type = "AdaDelta";
       break;
+    // solver_type是Adam
     case SolverParameter_SolverType_ADAM:
       type = "Adam";
       break;
+    // solver_type未知类型
     default:
       LOG(FATAL) << "Unknown SolverParameter solver_type: " << type;
     }
+    // solver_param设定type类型并且clear废弃的solver_type
     solver_param->set_type(type);
     solver_param->clear_solver_type();
   } else {
@@ -983,9 +997,11 @@ bool UpgradeSolverType(SolverParameter* solver_param) {
 }
 
 // Check for deprecations and upgrade the SolverParameter as needed.
+// 有需要更新求解器，对于deprecations解析到新的网络设定中
 bool UpgradeSolverAsNeeded(const string& param_file, SolverParameter* param) {
   bool success = true;
   // Try to upgrade old style solver_type enum fields into new string type
+  // 首先check param是否需要升级，如果需要升级那么升级参数，升级成功返回true，否则提示升级失败
   if (SolverNeedsTypeUpgrade(*param)) {
     LOG(INFO) << "Attempting to upgrade input file specified using deprecated "
               << "'solver_type' field (enum)': " << param_file;
@@ -1004,10 +1020,13 @@ bool UpgradeSolverAsNeeded(const string& param_file, SolverParameter* param) {
 }
 
 // Read parameters from a file into a SolverParameter proto message.
+// 从文件中读取参数到一个SolverParameter proto message
 void ReadSolverParamsFromTextFileOrDie(const string& param_file,
                                        SolverParameter* param) {
+  // 如果param_file不是正确的proto格式的文件，打印错误日志
   CHECK(ReadProtoFromTextFile(param_file, param))
       << "Failed to parse SolverParameter file: " << param_file;
+  // 由于Caffe版本升级的原因，是否有必要对已有的参数更新到最新的param
   UpgradeSolverAsNeeded(param_file, param);
 }
 

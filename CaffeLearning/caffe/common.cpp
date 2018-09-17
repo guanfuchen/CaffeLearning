@@ -39,12 +39,15 @@ int64_t cluster_seedgen(void) {
   return seed;
 }
 
-
+// 通过pargc和pargv的指针传递并改变
 void GlobalInit(int* pargc, char*** pargv) {
   // Google flags.
+  // Google命令行参数解析第三方库解析，其中remove_flags=true表示解析后应该去除已知参数列表的argc和argv
   ::gflags::ParseCommandLineFlags(pargc, pargv, true);
   // Google logging.
+  // Google流日志初始化，通过输入的argv[0]提供给流日志glog运行程序的名字
   ::google::InitGoogleLogging(*(pargv)[0]);
+  // 提供段错误的回溯
   // Provide a backtrace on segfault.
   ::google::InstallFailureSignalHandler();
 }

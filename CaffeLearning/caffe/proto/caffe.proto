@@ -97,14 +97,17 @@ message NetParameter {
 
 // NOTE
 // Update the next available ID when you add a new SolverParameter field.
+// 当你需要一个新的SolverParameter field字段更新下一个可用的ID
 //
 // SolverParameter next available ID: 41 (last added: type)
 message SolverParameter {
   //////////////////////////////////////////////////////////////////////////////
   // Specifying the train and test networks
+  // 确定训练和测试网络
   //
   // Exactly one train net must be specified using one of the following fields:
   //     train_net_param, train_net, net_param, net
+  // 具体来说一个训练网络必须通过使用下述的字段定义：train_net_param, train_net, net_param, net
   // One or more test nets may be specified using any of the following fields:
   //     test_net_param, test_net, net_param, net
   // If more than one test net field is specified (e.g., both net and
@@ -116,8 +119,10 @@ message SolverParameter {
 
   // Proto filename for the train net, possibly combined with one or more
   // test nets.
+  // 训练网络的proto文件名
   optional string net = 24;
   // Inline train net param, possibly combined with one or more test nets.
+  // Inline训练网络参数
   optional NetParameter net_param = 25;
 
   optional string train_net = 1; // Proto filename for the train net.
@@ -132,24 +137,31 @@ message SolverParameter {
   // train_state will have phase = TRAIN,
   // and all test_state's will have phase = TEST.
   // Other defaults are set according to the NetState defaults.
+  // 所有states中train_state将会phase=TRAIN，并且test_state将会phase=TEST
   optional NetState train_state = 26;
   repeated NetState test_state = 27;
 
   // The number of iterations for each test net.
+  // 每一个test网络的迭代次数
   repeated int32 test_iter = 3;
 
   // The number of iterations between two testing phases.
+  // 两个testing phases间的迭代数量
   optional int32 test_interval = 4 [default = 0];
   optional bool test_compute_loss = 19 [default = false];
   // If true, run an initial test pass before the first iteration,
   // ensuring memory availability and printing the starting value of the loss.
   optional bool test_initialization = 32 [default = true];
+  // base学习率
   optional float base_lr = 5; // The base learning rate
   // the number of iterations between displaying info. If display = 0, no info
   // will be displayed.
+  // 两次显示信息的迭代数目
   optional int32 display = 6;
   // Display the loss averaged over the last average_loss iterations
+  // 显示loss平均
   optional int32 average_loss = 33 [default = 1];
+  // 最大迭代次数
   optional int32 max_iter = 7; // the maximum number of iterations
   // accumulate gradients over `iter_size` x `batch_size` instances
   optional int32 iter_size = 36 [default = 1];
@@ -169,24 +181,35 @@ message SolverParameter {
   //
   // where base_lr, max_iter, gamma, step, stepvalue and power are defined
   // in the solver parameter protocol buffer, and iter is the current iteration.
+  // 学习率策略目前支持：fixed, step, exp, inv, multistep, poly, sigmoid
   optional string lr_policy = 8;
+  // gamma用来计算学习率的参数
   optional float gamma = 9; // The parameter to compute the learning rate.
+  // power用来计算学习率的参数
   optional float power = 10; // The parameter to compute the learning rate.
+  // momentum动量参数
   optional float momentum = 11; // The momentum value.
+  // weight_decay表示权重下降decay
   optional float weight_decay = 12; // The weight decay.
   // regularization types supported: L1 and L2
   // controlled by weight_decay
+  // 正则化支持类型：L1和L2
   optional string regularization_type = 29 [default = "L2"];
   // the stepsize for learning rate policy "step"
+  // 学习率策略policy step的stepsize
   optional int32 stepsize = 13;
   // the stepsize for learning rate policy "multistep"
+  // 多步stepsize
   repeated int32 stepvalue = 34;
 
   // Set clip_gradients to >= 0 to clip parameter gradients to that L2 norm,
   // whenever their actual L2 norm is larger.
+  // clip_gradients用来clip参数梯度，当真实的L2 norm非常大
   optional float clip_gradients = 35 [default = -1];
 
+  // snapshot间隔
   optional int32 snapshot = 14 [default = 0]; // The snapshot interval
+  // snapshot_prefix保留的快照后缀
   optional string snapshot_prefix = 15; // The prefix for the snapshot.
   // whether to snapshot diff in the results or not. Snapshotting diff will help
   // debugging but the final protocol buffer size will be much larger.
@@ -197,28 +220,36 @@ message SolverParameter {
   }
   optional SnapshotFormat snapshot_format = 37 [default = BINARYPROTO];
   // the mode solver will use: 0 for CPU and 1 for GPU. Use GPU in default.
+  // solver将使用的mode: 0代表CPU，1代表GPU，默认使用GPU
   enum SolverMode {
     CPU = 0;
     GPU = 1;
   }
+  // solver mode默认是GPU
   optional SolverMode solver_mode = 17 [default = GPU];
   // the device_id will that be used in GPU mode. Use device_id = 0 in default.
+  // 在GPU模式下将默认使用的device_id，默认使用device_id=0
   optional int32 device_id = 18 [default = 0];
   // If non-negative, the seed with which the Solver will initialize the Caffe
   // random number generator -- useful for reproducible results. Otherwise,
   // (and by default) initialize using a seed derived from the system clock.
+  // Solver用来初始化Caffe的随机种子，对于复现结果非常有用。另一方面默认使用系统clock时钟的seed来初始化
   optional int64 random_seed = 20 [default = -1];
 
   // type of the solver
+  // solver的类型，默认是SGD
   optional string type = 40 [default = "SGD"];
 
   // numerical stability for RMSProp, AdaGrad and AdaDelta and Adam
+  // RMSProp, AdaGrad和AdaDelta和Adam的数值稳定性
   optional float delta = 31 [default = 1e-8];
   // parameters for the Adam solver
+  // Adam求解器的参数
   optional float momentum2 = 39 [default = 0.999];
 
   // RMSProp decay value
   // MeanSquare(t) = rms_decay*MeanSquare(t-1) + (1-rms_decay)*SquareGradient(t)
+  // rms_decay用来对solver类型是RMSProp的decay
   optional float rms_decay = 38;
 
   // If true, print information about the state of the net that may help with
@@ -226,9 +257,11 @@ message SolverParameter {
   optional bool debug_info = 23 [default = false];
 
   // If false, don't save a snapshot after training finishes.
+  // snapshot_after_train表示训练完成是否保存snapshot，默认是true
   optional bool snapshot_after_train = 28 [default = true];
 
   // DEPRECATED: old solver enum types, use string instead
+  // 从前的solver enum类型，目前已经由type代替
   enum SolverType {
     SGD = 0;
     NESTEROV = 1;
@@ -238,6 +271,7 @@ message SolverParameter {
     ADAM = 5;
   }
   // DEPRECATED: use type instead of solver_type
+
   optional SolverType solver_type = 30 [default = SGD];
 }
 

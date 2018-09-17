@@ -31,16 +31,19 @@ using google::protobuf::io::ZeroCopyOutputStream;
 using google::protobuf::io::CodedOutputStream;
 using google::protobuf::Message;
 
+// 从文本文件中读取到proto message
 bool ReadProtoFromTextFile(const char* filename, Message* proto) {
   int fd = open(filename, O_RDONLY);
   CHECK_NE(fd, -1) << "File not found: " << filename;
   FileInputStream* input = new FileInputStream(fd);
+  // 从输入数据中解析为proto
   bool success = google::protobuf::TextFormat::Parse(input, proto);
   delete input;
   close(fd);
   return success;
 }
 
+// 将信息proto写入到prototxt文件中
 void WriteProtoToTextFile(const Message& proto, const char* filename) {
   int fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0644);
   FileOutputStream* output = new FileOutputStream(fd);

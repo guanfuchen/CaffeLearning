@@ -30,29 +30,36 @@ DEFINE_string(gpu, "",
     "Optional; run in GPU mode on given device IDs separated by ','."
     "Use '-gpu all' to run on all available GPUs. The effective training "
     "batch size is multiplied by the number of devices.");
+// solver求解器，solver定义protocol buffer文本文件
 DEFINE_string(solver, "",
     "The solver definition protocol buffer text file.");
 DEFINE_string(model, "",
     "The model definition protocol buffer text file..");
+// snapshot用来保存solver状态继续训练
 DEFINE_string(snapshot, "",
     "Optional; the snapshot solver state to resume training.");
+// weights预训练的权重用来初始化微调，通过,分割而成，不能和snapshot同时赋值
 DEFINE_string(weights, "",
     "Optional; the pretrained weights to initialize finetuning, "
     "separated by ','. Cannot be set simultaneously with snapshot.");
 DEFINE_int32(iterations, 50,
     "The number of iterations to run.");
+// 当信号接收的时候产生影响，stop
 DEFINE_string(sigint_effect, "stop",
              "Optional; action to take when a SIGINT signal is received: "
               "snapshot, stop or none.");
+// 当信号hup的时候snapshot
 DEFINE_string(sighup_effect, "snapshot",
              "Optional; action to take when a SIGHUP signal is received: "
              "snapshot, stop or none.");
 
 // A simple registry for caffe commands.
+// caffe commands简单注册器，其中包括train、test、device_query和time等
 typedef int (*BrewFunction)();
 typedef std::map<caffe::string, BrewFunction> BrewMap;
 BrewMap g_brew_map;
 
+// 宏定义，注册brew函数，其中func时注册函数名，其中g_brew_map添加该func
 #define RegisterBrewFunction(func) \
 namespace { \
 class __Registerer_##func { \
@@ -64,10 +71,12 @@ class __Registerer_##func { \
 __Registerer_##func g_registerer_##func; \
 }
 
+// brew函数，其中包括train、test、device_query和time
 static BrewFunction GetBrewFunction(const caffe::string& name) {
   if (g_brew_map.count(name)) {
     return g_brew_map[name];
   } else {
+    // 不存在的caffe commands，并打印可以操作的commands列表
     LOG(ERROR) << "Available caffe actions:";
     for (BrewMap::iterator it = g_brew_map.begin();
          it != g_brew_map.end(); ++it) {
@@ -79,7 +88,9 @@ static BrewFunction GetBrewFunction(const caffe::string& name) {
 }
 
 // Parse GPU ids or use all available devices
+// 解析GPU ids或者使用所有可用设备
 static void get_gpus(vector<int>* gpus) {
+  // 如果gpu设置为all
   if (FLAGS_gpu == "all") {
     int count = 0;
 #ifndef CPU_ONLY
@@ -91,12 +102,15 @@ static void get_gpus(vector<int>* gpus) {
       gpus->push_back(i);
     }
   } else if (FLAGS_gpu.size()) {
+    // 如果gpu id具体设置了，其中输入train/test/time/device_query --gpu 0,1,2都是以,符号隔开不同的gpu
     vector<string> strings;
     boost::split(strings, FLAGS_gpu, boost::is_any_of(","));
     for (int i = 0; i < strings.size(); ++i) {
+      // 添加对应的输入id的gpu到gpus向量列表中
       gpus->push_back(boost::lexical_cast<int>(strings[i]));
     }
   } else {
+    // 如果没有输入那么检查gpus大小为0
     CHECK_EQ(gpus->size(), 0);
   }
 }
@@ -108,9 +122,12 @@ static void get_gpus(vector<int>* gpus) {
 // RegisterBrewFunction(action);
 
 // Device Query: show diagnostic information for a GPU device.
+// Device Query设备查找：显示GPU设备的诊断信息
 int device_query() {
+  // 显示查询gpu，其中FLAGS_gpu是命令行输入的gpu
   LOG(INFO) << "Querying GPUs " << FLAGS_gpu;
   vector<int> gpus;
+  // 获取gpu列表，通过输入的命令行参数--gpu=1,2,3赋值
   get_gpus(&gpus);
   for (int i = 0; i < gpus.size(); ++i) {
     caffe::Caffe::SetDevice(gpus[i]);
@@ -118,7 +135,7 @@ int device_query() {
   }
   return 0;
 }
-RegisterBrewFunction(device_query);
+RegisterBrewFunction(device_query); // 注册caffe command函数device_query
 
 // Load the weights from the specified caffemodel(s) into the train and
 // test nets.
@@ -136,8 +153,10 @@ void CopyLayers(caffe::Solver<float>* solver, const std::string& model_list) {
 
 // Translate the signal effect the user specified on the command-line to the
 // corresponding enumeration.
+// 将命令行中的相应用户定义的信号转换为对应的枚举类型
 caffe::SolverAction::Enum GetRequestedAction(
     const std::string& flag_value) {
+  // 停止训练的信号
   if (flag_value == "stop") {
     return caffe::SolverAction::STOP;
   }
@@ -151,19 +170,26 @@ caffe::SolverAction::Enum GetRequestedAction(
 }
 
 // Train / Finetune a model.
+// 训练／微调模型
 int train() {
+  // solver必须定义
   CHECK_GT(FLAGS_solver.size(), 0) << "Need a solver definition to train.";
+  // 如果snaphot和weights都不为0，那么提示不能同时resume训练或者微调权重
   CHECK(!FLAGS_snapshot.size() || !FLAGS_weights.size())
       << "Give a snapshot to resume training or weights to finetune "
       "but not both.";
 
+  // solver parameter求解器参数
   caffe::SolverParameter solver_param;
+  // caffe从solver文件中读取solver params并赋值到solver_param
   caffe::ReadSolverParamsFromTextFileOrDie(FLAGS_solver, &solver_param);
 
   // If the gpus flag is not provided, allow the mode and device to be set
   // in the solver prototxt.
+  // 如果gpus flag没有提供，那么允许mode和device在solver prototxt中设置
   if (FLAGS_gpu.size() == 0
       && solver_param.solver_mode() == caffe::SolverParameter_SolverMode_GPU) {
+      // 如果device_id在solver_param参数中，否则FLAGS_gpu为0
       if (solver_param.has_device_id()) {
           FLAGS_gpu = "" +
               boost::lexical_cast<string>(solver_param.device_id());
@@ -173,29 +199,39 @@ int train() {
   }
 
   vector<int> gpus;
+  // 将FLAGS_gpu中转换为gpus
   get_gpus(&gpus);
   if (gpus.size() == 0) {
+    // 如果gpus未设置，那么solver求解器均在CPU中运行
     LOG(INFO) << "Use CPU.";
+    // Caffe设置mode为Brew枚举中的CPU
     Caffe::set_mode(Caffe::CPU);
   } else {
+    // 打印使用gpu ids
     ostringstream s;
     for (int i = 0; i < gpus.size(); ++i) {
       s << (i ? ", " : "") << gpus[i];
     }
     LOG(INFO) << "Using GPUs " << s.str();
+// 如果仅仅在CPU_ONLY下和非CPU_ONLY下
+    
+// 定义GPU下
 #ifndef CPU_ONLY
+    // 打印对应的gpus相应的信息
     cudaDeviceProp device_prop;
     for (int i = 0; i < gpus.size(); ++i) {
       cudaGetDeviceProperties(&device_prop, gpus[i]);
       LOG(INFO) << "GPU " << gpus[i] << ": " << device_prop.name;
     }
 #endif
+    // 设置solver_param中的device_id为gpus[0]
     solver_param.set_device_id(gpus[0]);
     Caffe::SetDevice(gpus[0]);
     Caffe::set_mode(Caffe::GPU);
     Caffe::set_solver_count(gpus.size());
   }
 
+  // caffe的信号处理类
   caffe::SignalHandler signal_handler(
         GetRequestedAction(FLAGS_sigint_effect),
         GetRequestedAction(FLAGS_sighup_effect));
@@ -387,10 +423,6 @@ int time() {
 }
 RegisterBrewFunction(time);
 
-static void extracted(int &argc, char **&argv) {
-    caffe::GlobalInit(&argc, &argv);
-}
-
 int main(int argc, char** argv) {
   // Print output to stderr (while still logging).
   FLAGS_alsologtostderr = 1;
@@ -405,12 +437,12 @@ int main(int argc, char** argv) {
       "  device_query    show GPU diagnostic information\n"
       "  time            benchmark model execution time");
   // Run tool or show usage.
-    extracted(argc, argv);
+  caffe::GlobalInit(&argc, &argv);
   if (argc == 2) {
 #ifdef WITH_PYTHON_LAYER
     try {
 #endif
-      return GetBrewFunction(caffe::string(argv[1]))();
+      return GetBrewFunction(caffe::string(argv[1]))(); // arv[1]是train还是test还是device_query
 #ifdef WITH_PYTHON_LAYER
     } catch (bp::error_already_set) {
       PyErr_Print();

@@ -6,7 +6,7 @@
 #include <vector>
 
 // Stub out GPU calls as unavailable.
-
+// NO_GPU用来显示无GPU这个FATAL日志
 #define NO_GPU LOG(FATAL) << "Cannot use GPU in CPU-only Caffe: check mode."
 
 #define STUB_GPU(classname) \

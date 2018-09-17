@@ -106,8 +106,10 @@ class Caffe {
   // Thread local context for Caffe. Moved to common.cpp instead of
   // including boost/thread.hpp to avoid a boost/NVCC issues (#1009, #1010)
   // on OSX. Also fails on Linux with CUDA 7.0.18.
+  // 线程tlc caffe
   static Caffe& Get();
 
+  // Brew表示模式CPU或者GPU
   enum Brew { CPU, GPU };
 
   // This random number generator facade hides boost and CUDA rng
@@ -145,16 +147,19 @@ class Caffe {
   // into the program since that may cause allocation of pinned memory being
   // freed in a non-pinned way, which may cause problems - I haven't verified
   // it personally but better to note it here in the header file.
+  // 设置Caffe运行mode
   inline static void set_mode(Brew mode) { Get().mode_ = mode; }
   // Sets the random seed of both boost and curand
   static void set_random_seed(const unsigned int seed);
   // Sets the device. Since we have cublas and curand stuff, set device also
   // requires us to reset those values.
+  // 将caffe设置在divice_id上进行操作
   static void SetDevice(const int device_id);
   // Prints the current GPU status.
   static void DeviceQuery();
   // Parallel training info
   inline static int solver_count() { return Get().solver_count_; }
+  // 并行训练信息，这里设置solver count
   inline static void set_solver_count(int val) { Get().solver_count_ = val; }
   inline static bool root_solver() { return Get().root_solver_; }
   inline static void set_root_solver(bool val) { Get().root_solver_ = val; }
@@ -166,7 +171,9 @@ class Caffe {
 #endif
   shared_ptr<RNG> random_generator_;
 
+  // caffe Brew模式，包括CPU和GPU
   Brew mode_;
+  // 求解器的数量，也就是多个gpus
   int solver_count_;
   bool root_solver_;
 

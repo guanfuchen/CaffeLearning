@@ -11,6 +11,7 @@ namespace caffe {
 /**
  * @brief Optimizes the parameters of a Net using
  *        stochastic gradient descent (SGD) with momentum.
+ * 使用带动量的SGD随机梯度下降算法优化Net参数
  */
 template <typename Dtype>
 class SGDSolver : public Solver<Dtype> {
